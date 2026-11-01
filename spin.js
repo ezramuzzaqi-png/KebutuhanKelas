@@ -29,7 +29,7 @@ function draw(){
   ctx.beginPath();ctx.arc(c,c,W/12,0,7);ctx.fillStyle='#fff';ctx.fill();
 }
 function spin(){
-  if(spinning||!pool.length)return;spinning=true;$('go').disabled=true;$('hub').disabled=true;
+  if(spinning||!pool.length)return;spinning=true;$('hub').disabled=true;
   const n=pool.length,arc=2*Math.PI/n,idx=Math.floor(Math.random()*n);
   const jitter=(Math.random()-.5)*arc*.7;
   const tgt=-Math.PI/2-(idx+.5)*arc+jitter;
@@ -39,7 +39,7 @@ function spin(){
     const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);
     angle=start+(end-start)*e;draw();
     if(p<1)return requestAnimationFrame(f);
-    spinning=false;$('go').disabled=false;$('hub').disabled=false;pick(idx);
+    spinning=false;$('hub').disabled=false;pick(idx);
   })(t0);
 }
 function pick(i){
@@ -52,7 +52,7 @@ function list(){
   $('hist').innerHTML=hist.map(s=>`<li><b>${s.absen}</b> – ${s.nama}</li>`).join('');
   $('left').textContent=`Sisa di roda: ${pool.length} dari ${siswaAwal.length}`;
 }
-$('go').onclick=$('hub').onclick=spin;
+$('hub').onclick=spin;
 $('mode').onchange=()=>draw();
 $('rst').onclick=()=>{pool=[...siswaAwal];hist=[];angle=0;$('num').textContent='–';$('nm').textContent='Putar rodanya';$('tick').textContent='Siap diputar';draw();list()};
 addEventListener('resize',size);
