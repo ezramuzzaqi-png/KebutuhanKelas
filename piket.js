@@ -32,4 +32,28 @@ $('days').onclick=e=>{const b=e.target.closest('.st');if(!b||b.disabled)return;i
 $('shuf').onclick=()=>{ulang(HARI[cur],g=>{for(let i=g.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[g[i],g[j]]=[g[j],g[i]]}});save();renderPiket()};
 $('def').onclick=()=>{ulang(HARI[cur],g=>g.sort((a,b)=>a-b));save();renderPiket()};
 
+/* ===== Salin tugas + petugas (siap tempel ke WhatsApp) ===== */
+function teksPiket(h){
+  const A=alok[h],sisa=pool(h);
+  const blok=(j,ids)=>`*${j}*\n`+(ids.length?ids.map((a,i)=>`${i+1}. ${byAbsen[a].nama}`).join('\n'):'-');
+  const b=Object.keys(TUGAS).map(k=>blok(TUGAS[k],A[k]));
+  if(sisa.length)b.push(blok('Belum dapat tugas',sisa));
+  return `📋 *Jadwal Piket Hari ${h}*\nKelas 11 RPL 2\n\n`+b.join('\n\n');
+}
+async function salin(t){
+  try{await navigator.clipboard.writeText(t);return true}catch(e){}
+  try{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();const ok=document.execCommand('copy');x.remove();return ok}catch(e){return false}
+}
+{
+  const sb=document.createElement('button');
+  sb.id='cpy';sb.className=$('shuf').className;sb.textContent='Salin tugas';
+  $('shuf').insertAdjacentElement('afterend',sb);
+  let tm;
+  sb.onclick=async()=>{
+    const ok=await salin(teksPiket(HARI[cur]));
+    sb.textContent=ok?'Tersalin ✓':'Gagal menyalin';
+    clearTimeout(tm);tm=setTimeout(()=>sb.textContent='Salin tugas',2000);
+  };
+}
+
 cur=HARI.indexOf(document.body.dataset.hari);renderPiket();
