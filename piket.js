@@ -18,18 +18,34 @@ function ulang(h,urut){const n={};Object.keys(TUGAS).forEach(k=>n[k]=alok[h][k].
 function renderPiket(){
   const h=HARI[cur],g=grup[h],A=alok[h],sisa=pool(h),now=HARI[new Date().getDay()-1];
   $('ptitle').textContent=h+(h===now?' · Hari ini':'');
-  $('tot').textContent=`${g.length} orang piket hari ${h}.`+(sisa.length?` ${sisa.length} orang belum dapat tugas; tombol + mengambil dari mereka.`:' Semua sudah dapat tugas. Kurangi salah satu tugas dulu kalau mau menambah di tugas lain.');
+  $('tot').textContent=`${g.length} orang piket hari ${h}.`+(sisa.length?` ${sisa.length} orang belum dapat tugas; tombol + mengambil dari mereka.`:' Semua sudah dapat tugas. Kurangi salah satu tugas dulu kalau mau menambah di tugas lain.')+' Seret nama (⋮⋮) untuk memindahkan antar tugas.';
   const kartu=(judul,ids,k)=>`
-   <div class="card">
+   <div class="card zn" data-z="${k||'pool'}">
      <div class="flex justify-between items-center gap-2 mb-3"><b class="text-lg">${judul}</b>${k?`<span class="flex items-center gap-2"><button class="btn2 st" data-k="${k}" data-d="-1"${A[k].length?'':' disabled'}>−</button><b class="w-6 text-center text-lg">${A[k].length}</b><button class="btn2 st" data-k="${k}" data-d="1"${sisa.length?'':' disabled'}>+</button></span>`:''}</div>
-     <ul class="space-y-2 text-base">${ids.map(a=>`<li class="flex gap-3"><b class="mu w-7 text-right shrink-0">${a}</b><span class="font-medium">${byAbsen[a].nama}</span></li>`).join('')||'<li class="mu">Belum ada petugas</li>'}</ul>
+     <ul class="space-y-2 text-base">${ids.map(a=>`<li class="flex gap-3 dr" data-a="${a}"><span class="gp">⋮⋮</span><b class="mu w-7 text-right shrink-0">${a}</b><span class="font-medium">${byAbsen[a].nama}</span></li>`).join('')||'<li class="mu">'+(k?'Belum ada petugas':'Kosong. Seret nama ke sini untuk melepas tugas.')+'</li>'}</ul>
    </div>`;
   let html=Object.keys(TUGAS).map(k=>kartu(TUGAS[k],A[k],k)).join('');
-  if(sisa.length)html+=kartu('Belum dapat tugas',sisa,'');
+  html+=kartu('Belum dapat tugas',sisa,'');
   $('days').innerHTML=html;
 }
-$('days').onclick=e=>{const b=e.target.closest('.st');if(!b||b.disabled)return;if(ubah(HARI[cur],b.dataset.k,+b.dataset.d)){save();renderPiket()}};
-$('shuf').onclick=()=>{ulang(HARI[cur],g=>{for(let i=g.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[g[i],g[j]]=[g[j],g[i]]}});save();renderPiket()};
+$('days').onclick=e=>{const b=e.target.closest('.st');if(!b||b.disabled||sp)return;if(ubah(HARI[cur],b.dataset.k,+b.dataset.d)){save();renderPiket()}};
+/* acak dengan animasi: tiap tick mengacak ulang dan makin melambat, lalu berhenti di hasil akhir */
+let sp=false;
+const acak=g=>{for(let i=g.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[g[i],g[j]]=[g[j],g[i]]}};
+$('shuf').onclick=()=>{
+  if(sp)return;
+  const h=HARI[cur],b=$('shuf'),t0=b.textContent;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){ulang(h,acak);save();renderPiket();return}
+  sp=true;b.textContent='Mengacak…';b.disabled=$('def').disabled=true;$('days').classList.add('spin');
+  let i=0;
+  (function f(){
+    ulang(h,acak);i++;
+    const end=i>=20,d=$('days');
+    if(end){sp=false;save();d.classList.replace('spin','fin');b.textContent=t0;b.disabled=$('def').disabled=false;setTimeout(()=>d.classList.remove('fin'),700)}
+    renderPiket();
+    if(!end)setTimeout(f,50+i*i*.6);
+  })();
+};
 $('def').onclick=()=>{ulang(HARI[cur],g=>g.sort((a,b)=>a-b));save();renderPiket()};
 
 /* ===== Salin tugas + petugas (siap tempel ke WhatsApp) ===== */
@@ -49,11 +65,22 @@ async function salin(t){
   sb.id='cpy';sb.className=$('shuf').className;sb.textContent='Salin tugas';
   $('shuf').insertAdjacentElement('afterend',sb);
   let tm;
-  sb.onclick=async()=>{
+  sb.onclick=async()=>{if(sp)return;
     const ok=await salin(teksPiket(HARI[cur]));
     sb.textContent=ok?'Tersalin ✓':'Gagal menyalin';
     clearTimeout(tm);tm=setTimeout(()=>sb.textContent='Salin tugas',2000);
   };
 }
+
+/* ===== Seret & lepas: pindah/urutkan nama antar tugas; lepas di "Belum dapat tugas" = lepas dari tugas ===== */
+dnd($('days'),{item:'.dr',zone:'.zn',ok:()=>!sp,drop:(el,z,ref,after)=>{
+  const h=HARI[cur],a=+el.dataset.a,k=z.dataset.z;
+  Object.values(alok[h]).forEach(l=>{const i=l.indexOf(a);if(i>-1)l.splice(i,1)});
+  if(k!=='pool'){const l=alok[h][k];let i=ref?l.indexOf(+ref.dataset.a):-1;i=i<0?l.length:i+(after?1:0);l.splice(i,0,a)}
+  save();renderPiket();
+}});
+
+/* ===== Simpan ke riwayat ===== */
+barSimpan($('tot'),()=>{if(sp)return null;const h=HARI[cur],A=alok[h],s=pool(h);return{tipe:'piket',ket:'Piket '+h,data:[...Object.keys(TUGAS).map(k=>({j:TUGAS[k],a:[...A[k]]})),...(s.length?[{j:'Belum dapat tugas',a:s}]:[])]}},'Piket minggu ke-1');
 
 cur=HARI.indexOf(document.body.dataset.hari);renderPiket();

@@ -12,3 +12,57 @@ const jadwalHari={
  Rabu:[25,26,27,28,29,30,31,32,33,34,35,36],
  Kamis:[37,38,39,40,41,42,43,44,45,46,47,48,49]
 };
+
+/* ============ SERET & LEPAS (mouse + layar sentuh) ============
+   dnd(wadah,{item,zone,ok,drop}). Di layar sentuh, tarik pegangan ⋮⋮ (.gp) supaya halaman tetap bisa di-scroll.
+   drop(elemen,zona,elemenAcuan,setelahAcuan) dipanggil saat dilepas di zona yang valid. */
+function dnd(root,o){
+  let d=null,mk=[];
+  const bersih=()=>{mk.forEach(x=>x.classList.remove('over','ib','ia'));mk=[]};
+  const akhir=()=>{if(!d)return;bersih();if(d.g)d.g.remove();d.el.classList.remove('dragging');document.body.classList.remove('drg');d=null};
+  root.addEventListener('pointerdown',e=>{
+    const el=e.target.closest(o.item);
+    if(!el||e.button>0||(e.pointerType!=='mouse'&&!e.target.closest('.gp'))||(o.ok&&!o.ok()))return;
+    d={el,x:e.clientX,y:e.clientY,on:0};
+  });
+  addEventListener('pointermove',e=>{
+    if(!d)return;
+    if(!d.on){
+      if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<6)return;
+      const q=d.el.getBoundingClientRect();
+      d.on=1;d.ox=d.x-q.left;d.oy=d.y-q.top;
+      d.g=d.el.cloneNode(true);d.g.classList.add('ghost');d.g.style.width=q.width+'px';
+      document.body.appendChild(d.g);d.el.classList.add('dragging');document.body.classList.add('drg');
+    }
+    d.g.style.left=e.clientX-d.ox+'px';d.g.style.top=e.clientY-d.oy+'px';
+    if(e.clientY<70)scrollBy(0,-14);else if(e.clientY>innerHeight-70)scrollBy(0,14);
+    bersih();d.z=d.ref=null;
+    const t=document.elementFromPoint(e.clientX,e.clientY),z=t&&t.closest(o.zone),r=t&&t.closest(o.item);
+    if(!z||r===d.el)return;
+    z.classList.add('over');mk.push(z);d.z=z;
+    if(r&&z.contains(r)){const b=r.getBoundingClientRect();d.ref=r;d.after=e.clientY>b.top+b.height/2;r.classList.add(d.after?'ia':'ib');mk.push(r)}
+  });
+  addEventListener('pointerup',()=>{if(d&&d.on&&d.z)o.drop(d.el,d.z,d.ref,d.after);akhir()});
+  addEventListener('pointercancel',akhir);
+}
+
+/* ============ RIWAYAT (tersimpan di browser ini lewat localStorage) ============
+   tiap catatan: {id,tipe,ket,nama,waktu,data:[{j:judul,a:[nomor absen]}]} */
+const RW='riwayat11rpl2';
+const rwGet=()=>{try{return JSON.parse(localStorage.getItem(RW)||'[]')}catch(e){return[]}};
+const rwPut=a=>{try{localStorage.setItem(RW,JSON.stringify(a));return true}catch(e){return false}};
+const rwAdd=(tipe,ket,nama,data)=>rwPut([{id:Date.now(),tipe,ket,nama,waktu:Date.now(),data},...rwGet()]);
+const rwText=r=>`📋 *${r.nama}*\n${r.ket} · Kelas 11 RPL 2\n\n`+r.data.map(b=>`*${b.j}*\n`+(b.a.length?b.a.map((a,i)=>`${i+1}. ${byAbsen[a].nama}`).join('\n'):'-')).join('\n\n');
+/* kotak "nama + Simpan"; ambil() mengembalikan {tipe,ket,data} atau null kalau belum ada hasil */
+function barSimpan(sesudah,ambil,ph){
+  const d=document.createElement('div');d.className='card mb-3 flex flex-wrap items-center gap-2';
+  d.innerHTML=`<input class="inp" style="flex:1;min-width:180px" maxlength="60" placeholder="${ph}"><button class="btn">Simpan ke riwayat</button><a class="mu text-sm underline" href="riwayat.html">Lihat riwayat</a>`;
+  const i=d.querySelector('input'),b=d.querySelector('button');let t;
+  b.onclick=()=>{
+    const r=ambil(),tg=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
+    const ok=!!r&&rwAdd(r.tipe,r.ket,i.value.trim()||r.ket+' – '+tg,r.data);
+    b.textContent=!r?'Belum ada hasil':ok?'Tersimpan ✓':'Gagal menyimpan';if(ok)i.value='';
+    clearTimeout(t);t=setTimeout(()=>b.textContent='Simpan ke riwayat',2000);
+  };
+  sesudah.insertAdjacentElement('afterend',d);
+}

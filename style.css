@@ -23,3 +23,23 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"S
 #wheel{width:100%;height:100%}
 #ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid var(--tx);z-index:2}
 a.tab{text-decoration:none;display:inline-block}
+.inp{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:8px 12px}
+.inp:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.dr{cursor:grab;user-select:none;-webkit-user-select:none;border-radius:8px}
+.gp{touch-action:none;cursor:grab;color:var(--mu);padding:0 4px;line-height:1.4;user-select:none;-webkit-touch-callout:none;letter-spacing:-.15em}
+.dragging{opacity:.35}
+body.drg,body.drg *{cursor:grabbing!important;user-select:none}
+.ghost{position:fixed;z-index:50;pointer-events:none;background:var(--card);border:1px solid var(--ac);border-radius:10px;padding:6px 10px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.over{outline:2px dashed var(--ac);outline-offset:-2px}
+.ib{box-shadow:0 -3px 0 var(--ac)}
+.ia{box-shadow:0 3px 0 var(--ac)}
+.spin .zn{border-color:var(--ac);background:var(--hi)}
+.fin .zn{animation:pop .5s ease-out}
+@keyframes pop{0%{transform:scale(.97)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.fin .zn{animation:none}}
+.rw-d{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.rw-d.on{grid-template-rows:1fr}
+.rw-in{min-height:0;overflow:hidden;opacity:0;transition:opacity .4s ease}
+.rw-d.on>.rw-in{opacity:1}
+@media (prefers-reduced-motion:reduce){.rw-d,.rw-in{transition:none}}
+.bhs{background:#dc2626;color:#fff;border-color:#dc2626}
