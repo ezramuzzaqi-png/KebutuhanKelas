@@ -1,14 +1,14 @@
+/* ===== Spin Kelompok ===== */
 let kN=5,absen=new Set(),hasil=[],kbusy=false;
-const PS='pisah11rpl2';
-let pisah=[];
-try{pisah=JSON.parse(localStorage.getItem(PS)||'[]').filter(p=>byAbsen[p[0]]&&byAbsen[p[1]])}catch(e){}
-const pisahSimpan=()=>{try{localStorage.setItem(PS,JSON.stringify(pisah))}catch(e){}};
+
+/* ===== ATURAN TETAP (tidak tampil di halaman, berlaku di semua perangkat) =====
+   Isi dengan nomor absen. Contoh: 13:[5,20] artinya nomor 13 tidak boleh sekelompok dengan nomor 5 dan nomor 20. */
 const L=[1,2,5,8,14,19,20,21,22,23,25,27,28,31,33,35,36,40,41,43,44,46,47,48,49];
 const JAUHKAN={
  13:L,
  32:L
 };
-const semua=()=>[...pisah,...Object.entries(JAUHKAN).flatMap(([a,l])=>l.filter(b=>byAbsen[a]&&byAbsen[b]).map(b=>[+a,b]))];
+const semua=()=>Object.entries(JAUHKAN).flatMap(([a,l])=>l.filter(b=>byAbsen[a]&&byAbsen[b]).map(b=>[+a,b]));
 /* hitung aturan aktif (kedua siswa hadir) dan berapa yang dilanggar pada pembagian g */
 function cek(g){
   const m={};g.forEach((k,i)=>k.forEach(s=>m[s.absen]=i));
@@ -24,7 +24,7 @@ function acak(arr,n){
   const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
   const g=Array.from({length:n},()=>[]);a.forEach((s,i)=>g[i%n].push(s));return g;
 }
-
+/* ketat=true: ulangi pengacakan sampai semua aturan terpenuhi (maks. 3000 percobaan, ambil yang terbaik) */
 function bagi(arr,n,ketat){
   let g=acak(arr,n);
   if(!ketat||!semua().length)return g;
@@ -60,7 +60,7 @@ $('kcopy').onclick=()=>{
   const t=hasil.map((m,i)=>`Kelompok ${i+1}\n`+m.map(s=>`${s.absen}. ${s.nama}`).join('\n')).join('\n\n');
   try{navigator.clipboard.writeText(t);$('kcopy').textContent='Tersalin!';setTimeout(()=>$('kcopy').textContent='Salin hasil',1500)}catch(e){}
 };
-
+/* ===== Seret & lepas antar kelompok (setelah spin selesai) ===== */
 dnd($('kres'),{item:'.dr',zone:'.zn',ok:()=>hasil.length&&!kbusy,drop:(el,z,ref,after)=>{
   const a=+el.dataset.a;let s;
   hasil.forEach(m=>{const i=m.findIndex(x=>x.absen===a);if(i>-1)s=m.splice(i,1)[0]});
@@ -68,29 +68,6 @@ dnd($('kres'),{item:'.dr',zone:'.zn',ok:()=>hasil.length&&!kbusy,drop:(el,z,ref,
   tampil(hasil);info();
 }});
 
-(function(){
-  const d=document.createElement('div');d.className='card mb-3';
-  const op=siswaAwal.map(s=>`<option value="${s.absen}">${s.absen}. ${s.nama}</option>`).join('');
-  const sl='style="background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;flex:1;min-width:150px;max-width:100%"';
-  d.innerHTML=`<details><summary class="cursor-pointer mu text-sm">⚙ Pengaturan "jangan sekelompok"</summary>
-    <div class="mu text-xs my-2">Pilih dua siswa yang tidak boleh masuk kelompok yang sama. Aturan ini hanya tersimpan di browser ini.</div>
-    <div class="flex flex-wrap items-center gap-2 mb-2"><select ${sl} id="pa">${op}</select><span class="mu">tidak dengan</span><select ${sl} id="pb">${op}</select><button class="btn2" id="padd">Tambah</button></div>
-    <div id="plist" class="flex flex-wrap gap-2"></div></details>`;
-  $('kres').insertAdjacentElement('beforebegin',d);
-  const pa=d.querySelector('#pa'),pb=d.querySelector('#pb'),ad=d.querySelector('#padd'),ls=d.querySelector('#plist');let t;
-  pb.selectedIndex=1;
-  const nd=a=>byAbsen[a].nama.split(' ')[0];
-  const tmpl=()=>{ls.innerHTML=pisah.map((p,i)=>`<button class="btn2 text-sm" style="padding:4px 10px" data-i="${i}" title="Hapus aturan ini">${p[0]}. ${nd(p[0])} ≠ ${p[1]}. ${nd(p[1])} ✕</button>`).join('')||'<span class="mu text-sm">Belum ada aturan.</span>'};
-  const pesan=x=>{ad.textContent=x;clearTimeout(t);t=setTimeout(()=>ad.textContent='Tambah',2000)};
-  ad.onclick=()=>{
-    const a=+pa.value,b=+pb.value;
-    if(a===b)return pesan('Pilih dua orang berbeda');
-    if(pisah.some(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a)))return pesan('Sudah ada');
-    pisah.push([a,b]);pisahSimpan();tmpl();pesan('Ditambahkan ✓');
-  };
-  ls.onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;pisah.splice(+b.dataset.i,1);pisahSimpan();tmpl()};
-  tmpl();
-})();
-
+/* ===== Simpan ke riwayat ===== */
 barSimpan($('kinfo'),()=>!kbusy&&hasil.length?{tipe:'kelompok',ket:`${hasil.length} kelompok · ${hasil.reduce((n,m)=>n+m.length,0)} siswa`,data:hasil.map((m,i)=>({j:'Kelompok '+(i+1),a:m.map(s=>s.absen)}))}:null,'Nama mata pelajaran');
 chips();
