@@ -35,12 +35,6 @@ function bagi(arr,n,ketat){
 function tampil(g){
   $('kres').innerHTML=g.map((m,i)=>`<div class="card zn" data-g="${i}"><div class="flex justify-between mb-2"><b class="text-lg">Kelompok ${i+1}</b><span class="text-xs mu">${m.length} orang</span></div><ul class="space-y-1">${m.map(s=>`<li class="flex gap-2 dr" data-a="${s.absen}"><span class="gp">⋮⋮</span><b class="mu w-7 text-right shrink-0">${s.absen}</b><span class="font-medium">${s.nama}</span></li>`).join('')||'<li class="mu text-sm">Kosong</li>'}</ul></div>`).join('');
 }
-function info(){
-  const n=hasil.reduce((s,m)=>s+m.length,0),c=cek(hasil);
-  $('kinfo').textContent=`${n} siswa hadir dibagi ke ${hasil.length} kelompok.`
-    +(c.ak?(c.v?` ⚠ ${c.v} dari ${c.ak} aturan "jangan sekelompok" tidak terpenuhi.`:` Semua ${c.ak} aturan "jangan sekelompok" terpenuhi.`):'')
-    +' Seret nama (⋮⋮) untuk memindahkan antar kelompok.';
-}
 function kspin(){
   const h=siswaAwal.filter(s=>!absen.has(s.absen));
   if(h.length<kN){$('kinfo').textContent='Jumlah kelompok lebih banyak dari siswa yang hadir.';return}
